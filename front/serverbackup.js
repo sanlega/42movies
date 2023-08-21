@@ -9,15 +9,11 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 require('dotenv').config();
 
-app.use(session({
-    secret: 'Pistolas',
-    resave: false,
-    saveUninitialized: true,
-    cookie: { secure: false }
-}));
-
 // MongoDB connection
 const MONGO_URI = process.env.MONGO_URI;
+mongoose.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+    .then(() => console.log('MongoDB connected'))
+    .catch(err => console.error(err));
 mongoose.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
     .then(() => console.log('MongoDB connected'))
     .catch(err => console.error(err));
@@ -36,12 +32,14 @@ const movieSchema = new mongoose.Schema({
     voters: [{
         type: String
     }],
-    creator: String  // Field to store the creator's ID
+    creator: String  // New field to store the creator's ID
 });
 
 const Movie = mongoose.model('Movie', movieSchema);
 
 // Passport setup for 42 API authentication
+
+
 passport.serializeUser((user, done) => {
     done(null, user.id);  // Storing user.id in the session
 });
@@ -50,29 +48,21 @@ passport.deserializeUser((id, done) => {
     done(null, { id: id });  // Retrieving user.id from the session
 });
 
-const axios = require('axios');  // You'll need to install axios: npm install axios
-
 passport.use(new OAuth2Strategy({
     authorizationURL: 'https://api.intra.42.fr/oauth/authorize',
     tokenURL: 'https://api.intra.42.fr/oauth/token',
     clientID: process.env.CLIENT_ID,
     clientSecret: process.env.CLIENT_SECRET,
     callbackURL: 'http://localhost:3000/auth/42/callback'
-}, async (accessToken, refreshToken, profile, done) => {
-    try {
-        // Fetch the user's profile using the accessToken
-        const response = await axios.get('https://api.intra.42.fr/v2/me', {
-            headers: {
-                'Authorization': `Bearer ${accessToken}`
-            }
-        });
-        const userProfile = response.data;
-        console.log("Fetched profile:", userProfile);
-        done(null, { id: userProfile.id });  // Assuming the profile has an 'id' field
-    } catch (error) {
-        console.error("Error fetching user profile:", error);
-        done(error);
-    }
+}, (accessToken, refreshToken, profile, done) => {
+    done(null, profile);
+}));
+
+app.use(session({
+    secret: 'Pistolas',
+    resave: false,
+    saveUninitialized: true,
+    cookie: { secure: false }
 }));
 
 app.use(passport.initialize());
@@ -89,8 +79,10 @@ app.get('/auth/42', passport.authenticate('oauth2'));
 app.get('/auth/42/callback', 
     passport.authenticate('oauth2', { failureRedirect: '/' }),
     (req, res) => {
+        // Initialize user session properties
         req.session.hasAddedMovie = false;
         req.session.hasVoted = false;
+        // Successful authentication, redirect to voting page.
         res.redirect('/vote');
     }
 );
@@ -135,15 +127,13 @@ app.get('/vote', async (req, res) => {
 });
 
 app.post('/vote/:movieId', async (req, res) => {
+    // Ensure user is authenticated
     if (!req.user || !req.user.id) {
         return res.status(403).send('You need to be logged in to perform this action.');
     }
     const userId = req.user.id.toString();
-
-    // Check if user has already voted or added a movie
-    const votedMovie = await Movie.findOne({ voters: userId });
-    const addedMovie = await Movie.findOne({ creator: userId });
-    if (votedMovie || addedMovie) {
+    // Check user's session
+    if (req.session.hasAddedMovie || req.session.hasVoted) {
         return res.send('You have already suggested a movie or voted.');
     }
     try {
@@ -168,21 +158,21 @@ app.post('/vote/:movieId', async (req, res) => {
 });
 
 app.post('/add-movie', async (req, res) => {
+    // Ensure user is authenticated
     if (!req.user || !req.user.id) {
         return res.status(403).send('You need to be logged in to perform this action.');
     }
     const userId = req.user.id.toString();
-    const movieTitle = req.body.movieName;  // Extract movie name from request body
-    // Check if user has already voted or added a movie
-    const votedMovie = await Movie.findOne({ voters: userId });
-    const addedMovie = await Movie.findOne({ creator: userId });
-    if (votedMovie || addedMovie) {
+    const movieTitle = req.body.movieName;
+
+    // Check user's session
+    if (req.session.hasAddedMovie || req.session.hasVoted) {
         return res.send('You have already suggested a movie or voted.');
     }
     try {
         const newMovie = new Movie({
             title: movieTitle,
-            votes: 1,  // Set initial votes to 1
+            votes: 0,  // Set initial votes to 0
             creator: userId
         });
         await newMovie.save();

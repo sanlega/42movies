@@ -113,7 +113,11 @@ app.get('/vote', async (req, res) => {
                 </div>
             `;
         }).join('');
-
+        let footerHtml = `
+        <div class="footer">
+            <p>Created by <a href="https://github.com/sanlega/" target="_blank">@sanlega</a></p>
+        </div>
+        `;
         let html = `
             <link rel="stylesheet" href="/styles.css">
             <div class="container">
@@ -125,6 +129,7 @@ app.get('/vote', async (req, res) => {
                     <button type="submit">Añadir</button>
                 </form>
             </div>
+            ${footerHtml}  <!-- Add the footer here -->
         `;
 
         res.send(html);

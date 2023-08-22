@@ -4,7 +4,7 @@ Movie Voting App 🎬
 Welcome to the Movie Voting App! This application allows users to vote for their favorite movies or suggest a new one. The authentication is done using the 42 API, ensuring that only 42 school members can participate.
 
   
-_Screenshot of the Movie Voting App_
+![alt text](https://github.com/sanlega/42movies/blob/main/screenshot_app.png?raw=true)
 
 Features 🌟
 -----------

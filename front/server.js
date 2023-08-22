@@ -57,7 +57,7 @@ passport.use(new OAuth2Strategy({
     tokenURL: 'https://api.intra.42.fr/oauth/token',
     clientID: process.env.CLIENT_ID,
     clientSecret: process.env.CLIENT_SECRET,
-    callbackURL: 'http://localhost:3000/auth/42/callback'
+    callbackURL: process.env.REDIRECT_URI 
 }, async (accessToken, refreshToken, profile, done) => {
     try {
         // Fetch the user's profile using the accessToken

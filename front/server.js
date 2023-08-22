@@ -139,12 +139,10 @@ app.post('/vote/:movieId', async (req, res) => {
         return res.status(403).send('You need to be logged in to perform this action.');
     }
     const userId = req.user.id.toString();
-
-    // Check if user has already voted or added a movie
-    const votedMovie = await Movie.findOne({ voters: userId });
+    // Check if user has already added a movie
     const addedMovie = await Movie.findOne({ creator: userId });
-    if (votedMovie || addedMovie) {
-        return res.send('You have already suggested a movie or voted.');
+    if (addedMovie) {
+        return res.send('You have already suggested a movie.');
     }
     try {
         const movie = await Movie.findById(req.params.movieId);
@@ -153,12 +151,25 @@ app.post('/vote/:movieId', async (req, res) => {
         }
         // Check if user has already voted for this movie
         if (movie.voters.includes(userId)) {
-            return res.send('You have already voted for this movie.');
+            // Remove the vote
+            movie.votes -= 1;
+            movie.voters = movie.voters.filter(voter => voter !== userId);
+            await movie.save();
+            req.session.hasVoted = false;
+            return res.redirect('/vote');
         }
+        // Check if user has voted for another movie
+        const votedMovie = await Movie.findOne({ voters: userId });
+        if (votedMovie) {
+            // Remove vote from the other movie
+            votedMovie.votes -= 1;
+            votedMovie.voters = votedMovie.voters.filter(voter => voter !== userId);
+            await votedMovie.save();
+        }
+        // Add vote to the current movie
         movie.votes += 1;
         movie.voters.push(userId);
         await movie.save();
-        // Update user's session
         req.session.hasVoted = true;
         res.redirect('/vote');
     } catch (err) {
@@ -172,21 +183,19 @@ app.post('/add-movie', async (req, res) => {
         return res.status(403).send('You need to be logged in to perform this action.');
     }
     const userId = req.user.id.toString();
-    const movieTitle = req.body.movieName;  // Extract movie name from request body
-    // Check if user has already voted or added a movie
+    const movieTitle = req.body.movieName;
+    // Check if user has already voted
     const votedMovie = await Movie.findOne({ voters: userId });
-    const addedMovie = await Movie.findOne({ creator: userId });
-    if (votedMovie || addedMovie) {
-        return res.send('You have already suggested a movie or voted.');
+    if (votedMovie) {
+        return res.send('You have already voted for a movie.');
     }
     try {
         const newMovie = new Movie({
             title: movieTitle,
-            votes: 1,  // Set initial votes to 1
+            votes: 1,
             creator: userId
         });
         await newMovie.save();
-        // Update user's session
         req.session.hasAddedMovie = true;
         res.redirect('/vote');
     } catch (err) {

@@ -123,7 +123,7 @@ app.get('/vote', async (req, res) => {
             <div class="container">
                 <h2>Vota la pelicula</h2>
                 ${movieListHtml}
-                <h2>Propon una pelicula nueva</h2>
+                <h2>Propón una pelicula nueva</h2>
                 <form action="/add-movie" method="post">
                     <input type="text" name="movieName" placeholder="Nombre de la pelicula" required>
                     <button type="submit">Añadir</button>

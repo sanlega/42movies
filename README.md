@@ -42,7 +42,7 @@ Setup and Installation 🛠️
     MONGO_URI=your_mongodb_uri
     CLIENT_ID=your_42_api_client_id
     CLIENT_SECRET=your_42_api_client_secret
-    
+    REDIRECT_URI=your_42_api_redirect_uri
     ```
     
     ⚠️ **Important**: Never commit your `.env` file. It contains sensitive information.

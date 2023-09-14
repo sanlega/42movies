@@ -121,7 +121,7 @@ app.get('/vote', async (req, res) => {
         let html = `
             <link rel="stylesheet" href="/styles.css">
             <div class="container">
-                <h2>Vota la pelicula</h2>
+                <h2>Vota la pelicula (⚠️ Última pelicula de Studio Ghibli)</h2>
                 ${movieListHtml}
                 <h2>Propón una pelicula nueva</h2>
                 <form action="/add-movie" method="post">
